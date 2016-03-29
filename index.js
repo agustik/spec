@@ -10,6 +10,16 @@ var path = require('path');
 var Git = require("nodegit");
 
 
+// Set version manually?
+var version = argv.v || false;
+
+// Version bump?
+var bumpType = argv.t || 'patch';
+
+// git tag it ?
+var bumpType = argv.g || false;
+
+
 function readFile(_path){
   try {
     return fs.readFileSync(_path).toString('utf-8');
@@ -51,20 +61,10 @@ function setSpecVersion(specfile, version){
     }
     return line;
   });
-
-
   return lines.join('\n')
 }
 
-
-
-
-// console.log(process)
-//
-
 dir('.', function (err, list){
-
-
   var specFile, npmFile, npmVersion, specVersion;
 
   list.forEach(function (file){
@@ -85,18 +85,20 @@ dir('.', function (err, list){
   if (specFile){
     specVersion = getSpecVersion(specFile);
   }
-  setSpecVersion(specFile, '0.0.2');
+
+
+  //setSpecVersion(specFile, '0.0.2');
+
+  var repo;
+
+  var tags = Git.Repository.open('.').then(function (repoResult) {
+      repo = repoResult;
+      return Git.Tag.list(repo);
+  });
+
+  tags.then(function (listOfTags){
+    console.log(listOfTags);
+  })
+
+
 });
-
-
-
-Git.Repository.open('.').then(function (repo){
-  console.log(repo);
-
-  Git
-    .Tag.list()
-    .then(function (tag){
-      console.log(tag)
-    })
-
-})
