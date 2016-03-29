@@ -50,6 +50,17 @@ function dir(_path, callback){
   fs.readdir(_path, callback);
 }
 
+function getLastCommit(repo, callback){
+
+  Git.Revparse.single(repo, 'HEAD').then(function(object) {
+
+
+    var oid = object.id();
+
+    callback(null, oid);
+  }, callback);
+}
+
 function getSpecVersion(specfile){
   var lines = specfile.split('\n');
 
@@ -172,9 +183,18 @@ dir('.', function (err, list){
 
 
     if (_GitTagIt){
-      repo.createTag(next, next, _GitTagMessage).then(function (res){
-        console.log(res);
-      })
+
+      getLastCommit(repo, function (err, ok){
+
+        console.log('OK', err, ok);
+      });
+
+
+      // var oid = Git.Oid.fromString('6dd3fdaac5325b5e0ab25d4f7fa78b8d8eb047eb');
+      // console.log('Tagging', next, oid)
+      // repo.createTag(oid, next, _GitTagMessage).then(function (res){
+      //   console.log(res);
+      // }, function (e){console.log('error?', e)})
     }
 
 
