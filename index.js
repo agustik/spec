@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict'
 var fs = require('fs');
 
@@ -9,6 +11,8 @@ var path = require('path');
 
 var Git = require("nodegit");
 
+var Directory = process.cwd();
+
 
 // Set version manually?
 var _Version = argv.v || false;
@@ -19,15 +23,28 @@ var _Release = argv.r || 'patch';
 // git tag it ?
 var _GitTagIt = argv.g || false;
 
+var _Dry = argv.d || false;
 // git tag it ?
 var _GitTagMessage = argv.m || "Tagged by specup";
 
+if (argv.h || argv.help){
+  return console.log(
+    [
+    'specup is for maintain nodejs modules and spec file in one command',
+    '-r [release] || default to "patch"',
+    '-g || tag it with git?, default is false',
+    '-m [message] || tag message, default to "Tagged by specup"',
+    '-v [version] || set your own version',
+    '-d || dry run'
+    ].join('\n')
+  )
+}
 
-console.log({
-  version : _Version,
-  bump : _Release,
-  git : _GitTagIt
-});
+// console.log({
+//   version : _Version,
+//   bump : _Release,
+//   git : _GitTagIt
+// });
 
 
 function readFile(_path){
@@ -38,7 +55,6 @@ function readFile(_path){
   }
 }
 function writeFile(_path, content){
-  console.log(_path, 'Write');
   try {
     return fs.writeFileSync(_path, content);
   } catch (e) {
@@ -118,11 +134,8 @@ function SortTags(tags){
     return 0;
   });
 }
-function setNextTag(current){
-
-
+function getNextTag(current){
   return semver.inc(current, _Release);
-
 }
 
 function getLatestTag(tags){
@@ -130,7 +143,7 @@ function getLatestTag(tags){
   return SortedTags.pop();
 }
 
-dir('.', function (err, list){
+dir(Directory, function (err, list){
   var specContent, specFileName, packageContent, npmVersion, specVersion;
 
   list.forEach(function (file){
@@ -153,12 +166,18 @@ dir('.', function (err, list){
     specVersion = getSpecVersion(specContent);
   }
 
-
-  //setSpecVersion(specContent, '0.0.2');
+  if (!packageContent && !specContent){
+    return console.log([
+      'No specfile and no package.json found :/',
+      'Are you in the right place?',
+      '',
+      'Current dir: '+Directory
+    ].join('\n'));
+  }
 
   var repo;
 
-  var tags = Git.Repository.open('.').then(function (repoResult) {
+  var tags = Git.Repository.open(Directory).then(function (repoResult) {
       repo = repoResult;
       return Git.Tag.list(repo);
   });
@@ -166,37 +185,51 @@ dir('.', function (err, list){
   tags.then(function (listOfTags){
     var tag = getLatestTag(listOfTags);
 
-    var next = setNextTag(tag);
+    var next = getNextTag(tag);
+
+    next = next || npmVersion;
 
     if (_Version){
       next = _Version;
     }
 
-    console.log(
-      {
-        spec : specVersion,
-        npm : npmVersion,
-        git_current : tag,
+    console.log(JSON.stringify({
+        current_spec_version : specVersion,
+        current_npm_version : npmVersion,
+        git_current_version : tag,
         next : next
-      }
-    );
+      }, null, 2 ));
 
 
-    if (_GitTagIt){
-
-      getLastCommit(repo, function (err, ok){
-
-        console.log('OK', err, ok);
-      });
-
-
-      // var oid = Git.Oid.fromString('6dd3fdaac5325b5e0ab25d4f7fa78b8d8eb047eb');
-      // console.log('Tagging', next, oid)
-      // repo.createTag(oid, next, _GitTagMessage).then(function (res){
-      //   console.log(res);
-      // }, function (e){console.log('error?', e)})
+    if (_Dry){
+      return;
     }
 
+    if (_GitTagIt){
+      var signature = repo.defaultSignature();
+      repo.createCommitOnHead(['package.json', specFileName], signature, signature,  _GitTagMessage)
+        .then(function(commitId) {
+          // the file is removed from the git repo, use fs.unlink now to remove it
+          // from the filesystem.
+          console.log("New Commit:", commitId.allocfmt(), commitId);
+
+          return commitId;
+        })
+        .then(function (oid){
+          repo.createTag(oid, next, _GitTagMessage)
+            .then(function (res){
+              console.log('Tagged with tag:', next );
+            });
+        })
+        .done();
+
+      // getLastCommit(repo, function (err, oid){
+      //   if (!err){
+      //     repo.createTag(oid, next, _GitTagMessage).then(function (res){
+      //     }, function (e){console.log('error?', e)})
+      //   }
+      // });
+    }
 
     if (specContent){
       writeFile(
