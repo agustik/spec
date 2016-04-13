@@ -1,0 +1,19 @@
+{
+  "name": "specup",
+  "version": "0.0.5",
+  "description": "Tool for bump version in package.json and RPM spec files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "bin": {
+    "specup": "index.js"
+  },
+  "license": "GPL-3.0",
+  "dependencies": {
+    "nodegit": "^0.12.0",
+    "semver": "^5.1.0",
+    "yargs": "^4.3.2"
+  }
+}
