@@ -1,5 +1,5 @@
 Name:		hut-api
-Version:	0.0.2
+Version:	v0.0.1
 Release:	1%{?dist}
 Summary:	HUT API's
 
