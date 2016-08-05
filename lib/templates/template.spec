@@ -1,15 +1,15 @@
-Name:		hut-api
-Version:	v0.0.2
+Name:     {{name}}
+Version:	{{version}}
 Release:	1%{?dist}
 Summary:	{{summary}}
 
 Group:		Applications/System
-License:	GPLv3
-URL:		http://gitlab.lsh.is/agustik/hut-api.git
+License:	{{license}}
+URL:		  {{repo}}
 Source0:	%{name}-%{version}.tar.gz
 
-BuildRequires:	npm git
-Requires:	    nodejs npm
+BuildRequires: {{buildrequires}}
+Requires:	    {{requires}}
 
 BuildRoot:  %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	noarch
@@ -23,7 +23,7 @@ BuildArch:	noarch
 
 
 %build
-npm install
+{{build}}
 
 %install
 test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
@@ -35,8 +35,8 @@ cp services.js %{buildroot}/%{_datadir}/%{name}
 cp index.js %{buildroot}/%{_datadir}/%{name}
 
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
-install -Dp -m 644 config.js.editme %{buildroot}/%{_sysconfdir}/%{name}/config.js
-ln -sf %{_sysconfdir}/%{name}/config.js %{buildroot}/%{_datadir}/%{name}/config.js
+{{^config}}install -Dp -m 644 config.js.editme %{buildroot}/%{_sysconfdir}/%{name}/config.js{{/config}}
+{{^config}}ln -sf %{_sysconfdir}/%{name}/config.js %{buildroot}/%{_datadir}/%{name}/config.js{{/config}}
 
 
 
